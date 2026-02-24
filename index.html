@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مستعرض فيديوهات عشوائي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* إخفاء شريط التمرير */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        body {
+            background-color: #000;
+            color: white;
+            overflow: hidden; /* لمنع التمرير الافتراضي */
+            touch-action: none; /* تحسين استجابة اللمس */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        /* تحسين مظهر الفيديو */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* لعرض الفيديو بالكامل دون قص */
+            background: black;
+        }
+
+        /* تأثير التلاشي للأزرار */
+        .fade-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* طبقة التحميل */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid #3b82f6; /* لون أزرق */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* التحكم في ظهور الواجهة */
+        .ui-hidden {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-black h-screen w-screen relative">
+
+    <!-- شاشة التحميل -->
+    <div id="loader">
+        <div class="spinner mb-4"></div>
+        <p class="text-gray-400 text-sm">جاري التحميل...</p>
+    </div>
+
+    <!-- حاوية الفيديو الرئيسي -->
+    <div id="video-container" class="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+        <video id="main-video" playsinline webkit-playsinline preload="auto">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <!-- طبقة المعلومات ورسائل الخطأ -->
+    <div id="info-layer" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center hidden z-10 w-3/4">
+        <p id="error-message" class="text-red-500 bg-black/80 p-4 rounded-lg border border-red-900"></p>
+    </div>
+
+    <!-- واجهة التحكم (الجانبية) -->
+    <div id="ui-controls" class="absolute left-4 bottom-20 flex flex-col gap-6 z-20 fade-transition">
+        
+        <!-- زر التكرار -->
+        <div class="flex flex-col items-center gap-1 group">
+            <button onclick="toggleLoop()" id="btn-loop" class="w-12 h-12 bg-gray-800/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition active:scale-95 border border-transparent">
+                <!-- أيقونة التكرار -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                    <path d="m17 2 4 4-4 4"/>
+                    <path d="M3 11v-1a4 4 0 0 1 4-4h14"/>
+                    <path d="m7 22-4-4 4-4"/>
+                    <path d="M21 13v1a4 4 0 0 1-4 4H3"/>
+                </svg>
+            </button>
+            <span class="text-xs text-white shadow-black drop-shadow-md">تكرار</span>
+        </div>
+
+        <!-- زر ملء الشاشة -->
+        <div class="flex flex-col items-center gap-1">
+            <button onclick="toggleFullscreen()" class="w-12 h-12 bg-gray-800/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+                    <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+                </svg>
+            </button>
+            <span class="text-xs text-white shadow-black drop-shadow-md">تكبير</span>
+        </div>
+
+        <!-- زر إخفاء الأزرار -->
+        <div class="flex flex-col items-center gap-1">
+            <button onclick="toggleUI()" class="w-12 h-12 bg-gray-800/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" x2="22" y1="2" y2="22"/>
+                </svg>
+            </button>
+            <span class="text-xs text-white shadow-black drop-shadow-md">إخفاء</span>
+        </div>
+
+    </div>
+
+    <script>
+        // المتغيرات العامة
+        const DATA_URL = "https://raw.githubusercontent.com/Aminoxdag/catbox-inonrr/refs/heads/main/inonrr.txt";
+        let videoList = [];
+        let currentIndex = 0;
+        let isLooping = false;
+        let isUiVisible = true;
+        
+        // عناصر DOM
+        const videoPlayer = document.getElementById('main-video');
+        const loader = document.getElementById('loader');
+        const uiControls = document.getElementById('ui-controls');
+        const btnLoop = document.getElementById('btn-loop');
+        const errorMsg = document.getElementById('error-message');
+        const infoLayer = document.getElementById('info-layer');
+
+        // --- تهيئة التطبيق ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchVideos();
+            setupInteractions();
+        });
+
+        // --- خوارزمية الخلط (Fisher-Yates Shuffle) ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- جلب ومعالجة البيانات ---
+        async function fetchVideos() {
+            try {
+                const response = await fetch(DATA_URL);
+                if (!response.ok) throw new Error("فشل في جلب ملف البيانات");
+                
+                const text = await response.text();
+                
+                // تحويل النص إلى مصفوفة وتنظيفه
+                let rawList = text.split('\n')
+                    .map(line => line.trim()) // إزالة المسافات الزائدة
+                    .filter(line => line.length > 0); // الاحتفاظ فقط بالأسطر غير الفارغة
+
+                if (rawList.length === 0) {
+                    showError("الملف فارغ أو لا يحتوي على روابط.");
+                    return;
+                }
+
+                // تطبيق الترتيب العشوائي
+                videoList = shuffleArray(rawList);
+
+                // تشغيل الفيديو الأول
+                loadVideo(0);
+                loader.style.display = 'none';
+
+            } catch (error) {
+                console.error(error);
+                loader.style.display = 'none';
+                showError("حدث خطأ أثناء تحميل القائمة. يرجى التحقق من الاتصال.");
+            }
+        }
+
+        // --- تشغيل الفيديو ---
+        function loadVideo(index) {
+            if (videoList.length === 0) return;
+
+            // التأكد من أن الفهرس ضمن الحدود
+            if (index < 0) index = 0;
+            if (index >= videoList.length) index = videoList.length - 1;
+
+            currentIndex = index;
+
+            // إعداد المصدر والتشغيل
+            // إضافة معالجة خطأ عند فشل تحميل رابط معين
+            videoPlayer.onerror = function() {
+                console.log("Error loading video, skipping...", videoList[currentIndex]);
+                showToast("فشل تحميل الفيديو، جاري الانتقال للتالي...");
+                setTimeout(() => nextVideo(), 1000); // محاولة الانتقال للتالي بعد ثانية
+            };
+
+            videoPlayer.src = videoList[currentIndex];
+            videoPlayer.load(); // إعادة تعيين الفيديو
+            
+            // محاولة التشغيل التلقائي
+            const playPromise = videoPlayer.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay prevented or interrupted.");
+                });
+            }
+        }
+
+        // --- وظائف التحكم ---
+        function toggleLoop() {
+            isLooping = !isLooping;
+            videoPlayer.loop = isLooping;
+            
+            if (isLooping) {
+                btnLoop.classList.add('border-green-500', 'text-green-400');
+                btnLoop.classList.remove('border-transparent');
+                showToast("تم تفعيل التكرار");
+            } else {
+                btnLoop.classList.remove('border-green-500', 'text-green-400');
+                btnLoop.classList.add('border-transparent');
+                showToast("تم إيقاف التكرار");
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function toggleUI() {
+            isUiVisible = !isUiVisible;
+            if (isUiVisible) {
+                uiControls.classList.remove('ui-hidden');
+            } else {
+                uiControls.classList.add('ui-hidden');
+            }
+        }
+
+        // --- التنقل (التالي / السابق) ---
+        function nextVideo() {
+            if (currentIndex < videoList.length - 1) {
+                loadVideo(currentIndex + 1);
+            } else {
+                showToast("وصلت لآخر القائمة");
+                animateBounce('up');
+            }
+        }
+
+        function prevVideo() {
+            if (currentIndex > 0) {
+                loadVideo(currentIndex - 1);
+            } else {
+                showToast("البداية");
+                animateBounce('down');
+            }
+        }
+
+        // عند انتهاء الفيديو (إذا لم يكن التكرار مفعلاً)، انتقل للتالي تلقائياً
+        videoPlayer.addEventListener('ended', () => {
+            if (!isLooping) {
+                if (currentIndex < videoList.length - 1) {
+                    nextVideo();
+                }
+            }
+        });
+
+        // --- التفاعلات (لمس، لوحة مفاتيح، فأرة) ---
+        function setupInteractions() {
+            let startY = 0;
+            let endY = 0;
+
+            // أحداث اللمس (للموبايل)
+            document.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                endY = e.changedTouches[0].clientY;
+                handleSwipe();
+            }, { passive: false });
+
+            // أحداث العجلة (للكمبيوتر)
+            document.addEventListener('wheel', (e) => {
+                // منع التمرير السريع جداً
+                if (e.deltaY > 30) {
+                    nextVideo(); // سكرول للأسفل = فيديو تالي
+                } else if (e.deltaY < -30) {
+                    prevVideo(); // سكرول للأعلى = فيديو سابق
+                }
+            });
+
+            // لوحة المفاتيح
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowDown' || e.key === ' ') {
+                    e.preventDefault();
+                    nextVideo();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    prevVideo();
+                } else if (e.key.toLowerCase() === 'f') {
+                    toggleFullscreen();
+                } else if (e.key.toLowerCase() === 'h') {
+                    toggleUI();
+                }
+            });
+
+            // النقر على الفيديو لإيقاف/تشغيل أو إظهار الواجهة
+            videoPlayer.addEventListener('click', () => {
+                if (!isUiVisible) {
+                    toggleUI(); // إذا كانت الواجهة مخفية، أظهرها
+                } else {
+                    if (videoPlayer.paused) videoPlayer.play();
+                    else videoPlayer.pause();
+                }
+            });
+
+            function handleSwipe() {
+                const threshold = 50; // الحد الأدنى للمسافة لاعتبارها سحباً
+                const diff = startY - endY;
+
+                if (Math.abs(diff) > threshold) {
+                    if (diff > 0) {
+                        // سحب للأعلى (Finger moves up) -> الفيديو التالي
+                        nextVideo();
+                    } else {
+                        // سحب للأسفل (Finger moves down) -> الفيديو السابق
+                        prevVideo();
+                    }
+                }
+            }
+        }
+
+        // --- وظائف مساعدة ---
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            infoLayer.classList.remove('hidden');
+        }
+
+        function showToast(msg) {
+            // إنشاء عنصر توست بسيط مؤقت
+            const toast = document.createElement('div');
+            toast.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900/80 text-white px-6 py-3 rounded-xl backdrop-blur-md z-50 fade-transition shadow-2xl border border-gray-700 text-sm font-semibold tracking-wide";
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 1000);
+        }
+
+        function animateBounce(direction) {
+            // حركة بسيطة تدل على الوصول للنهاية
+            const container = document.getElementById('video-container');
+            const transform = direction === 'up' ? 'translateY(-20px)' : 'translateY(20px)';
+            container.style.transition = 'transform 0.1s';
+            container.style.transform = transform;
+            setTimeout(() => {
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        }
+
+    </script>
+</body>
+</html>
