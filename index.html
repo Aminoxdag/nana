@@ -3,272 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>مستعرض فيديوهات عشوائي</title>
+    <title>مستعرض الفيديوهات الذكي - Liquid Glass</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* إخفاء شريط التمرير */
         ::-webkit-scrollbar {
             width: 0px;
             background: transparent;
         }
         
         body {
-            background-color: #000;
+            background-color: #030305;
             color: white;
-            overflow: hidden; /* لمنع التمرير الافتراضي */
-            touch-action: none; /* تحسين استجابة اللمس */
+            overflow: hidden;
+            touch-action: none;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
         }
 
-        /* تحسين مظهر الفيديو */
         video {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* لعرض الفيديو بالكامل دون قص */
-            background: black;
-        }
-
-        /* تأثير التلاشي للأزرار */
-        .fade-transition {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        /* طبقة التحميل */
-        #loader {
-            position: fixed;
-            inset: 0;
+            object-fit: contain;
             background: #000;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
         }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #333;
-            border-top: 4px solid #3b82f6; /* لون أزرق */
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .fade-transition {
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* التحكم في ظهور الواجهة */
         .ui-hidden {
             opacity: 0 !important;
-            pointer-events: none;
+            pointer-events: none !important;
+            transform: translateY(10px);
+        }
+
+        /* تأثير الزجاج السائل (Liquid Glass Effect) */
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                        inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+                        inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .liquid-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45),
+                        inset 0 1px 2px 0 rgba(255, 255, 255, 0.3),
+                        inset 0 -1px 2px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .liquid-glass-modal {
+            background: rgba(10, 10, 15, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
         }
     </style>
 </head>
-<body class="bg-black h-screen w-screen relative">
+<body class="h-screen w-screen relative overflow-hidden flex flex-col justify-between">
 
-    <!-- شاشة التحميل -->
-    <div id="loader">
-        <div class="spinner mb-4"></div>
-        <p class="text-gray-400 text-sm">جاري التحميل...</p>
+    <!-- شاشة التحميل الأولية -->
+    <div id="loader" class="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center backdrop-blur-2xl">
+        <div class="w-14 h-14 border-4 border-white/10 border-t-cyan-400 rounded-full animate-spin mb-4 shadow-[0_0_20px_rgba(34,211,238,0.3)]"></div>
+        <p class="text-gray-300 font-medium text-sm tracking-wide animate-pulse">جاري تحميل الفيديوهات...</p>
+    </div>
+
+    <!-- نافذة الإعدادات -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="liquid-glass-modal w-full max-w-md rounded-3xl p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    الإعدادات
+                </h3>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white p-1 rounded-full liquid-glass">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">مصدر روابط الفيديوهات (URL)</label>
+                    <input type="text" id="input-source" class="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">سرعة التشغيل</label>
+                    <select id="select-speed" onchange="changeSpeed(this.value)" class="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400">
+                        <option value="0.5" class="bg-gray-900">0.5x (بطيء جداً)</option>
+                        <option value="0.75" class="bg-gray-900">0.75x (بطيء)</option>
+                        <option value="1" selected class="bg-gray-900">1.0x (عادي)</option>
+                        <option value="1.25" class="bg-gray-900">1.25x (سريع)</option>
+                        <option value="1.5" class="bg-gray-900">1.5x (سريع جداً)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-sm text-gray-300">الخلط العشوائي التلقائي</span>
+                    <button onclick="toggleShuffle()" id="btn-shuffle-opt" class="w-12 h-6 bg-cyan-500 rounded-full transition relative p-1 flex items-center shadow-[0_0_10px_rgba(34,211,238,0.4)]">
+                        <div id="shuffle-dot" class="w-4 h-4 bg-white rounded-full transition-transform transform translate-x-6"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button onclick="saveSettings()" class="flex-1 liquid-glass hover:bg-white/20 text-white py-2.5 rounded-xl font-medium text-sm transition">حفظ وتحديث</button>
+                <button onclick="toggleSettings()" class="px-4 bg-black/30 hover:bg-black/50 text-gray-300 py-2.5 rounded-xl font-medium text-sm transition border border-white/10">إلغاء</button>
+            </div>
+        </div>
     </div>
 
     <!-- حاوية الفيديو الرئيسي -->
     <div id="video-container" class="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
         <video id="main-video" playsinline webkit-playsinline preload="auto">
-            Your browser does not support the video tag.
+            متصفحك لا يدعم عنصر الفيديو.
         </video>
     </div>
 
-    <!-- طبقة المعلومات ورسائل الخطأ -->
-    <div id="info-layer" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center hidden z-10 w-3/4">
-        <p id="error-message" class="text-red-500 bg-black/80 p-4 rounded-lg border border-red-900"></p>
+    <!-- طبقة التنبيهات (Toast) -->
+    <div id="toast-layer" class="fixed top-8 left-1/2 transform -translate-x-1/2 liquid-glass text-white px-5 py-2.5 rounded-full z-50 fade-transition opacity-0 pointer-events-none shadow-2xl text-xs font-medium border border-white/20">
+        رسالة تنبيه
     </div>
 
-    <!-- واجهة التحكم (الجانبية) -->
-    <div id="ui-controls" class="absolute left-4 bottom-20 flex flex-col gap-6 z-20 fade-transition">
+    <!-- مؤشر العداد العلوي -->
+    <div id="top-bar" class="absolute top-4 right-4 z-20 flex items-center gap-3 fade-transition">
+        <button onclick="toggleSettings()" class="w-10 h-10 liquid-glass rounded-full flex items-center justify-center transition shadow-lg active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-200"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <div class="liquid-glass px-3.5 py-2 rounded-full text-xs font-semibold tracking-wider text-gray-200 shadow-lg">
+            <span id="counter-text">0 / 0</span>
+        </div>
+    </div>
+
+    <!-- شريط التحكم السفلي (بدون زر تشغيل/إيقاف خارجي) -->
+    <div id="ui-controls" class="absolute left-4 bottom-6 flex flex-col items-center gap-3.5 z-20 fade-transition">
         
-        <!-- زر التكرار -->
-        <div class="flex flex-col items-center gap-1 group">
-            <button onclick="toggleLoop()" id="btn-loop" class="w-12 h-12 bg-gray-800/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition active:scale-95 border border-transparent">
-                <!-- أيقونة التكرار -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
-                    <path d="m17 2 4 4-4 4"/>
-                    <path d="M3 11v-1a4 4 0 0 1 4-4h14"/>
-                    <path d="m7 22-4-4 4-4"/>
-                    <path d="M21 13v1a4 4 0 0 1-4 4H3"/>
-                </svg>
+        <!-- زر كتم الصوت -->
+        <div class="flex flex-col items-center gap-1">
+            <button onclick="toggleMute()" id="btn-mute" class="w-12 h-12 liquid-glass rounded-full flex items-center justify-center transition shadow-xl active:scale-95">
+                <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-400 hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
             </button>
-            <span class="text-xs text-white shadow-black drop-shadow-md">تكرار</span>
+            <span class="text-[10px] text-gray-300 font-medium drop-shadow">الصوت</span>
+        </div>
+
+        <!-- زر التكرار -->
+        <div class="flex flex-col items-center gap-1">
+            <button onclick="toggleLoop()" id="btn-loop" class="w-12 h-12 liquid-glass rounded-full flex items-center justify-center transition shadow-xl active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+            </button>
+            <span class="text-[10px] text-gray-300 font-medium drop-shadow">تكرار</span>
         </div>
 
         <!-- زر ملء الشاشة -->
         <div class="flex flex-col items-center gap-1">
-            <button onclick="toggleFullscreen()" class="w-12 h-12 bg-gray-800/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                    <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                    <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                    <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                </svg>
+            <button onclick="toggleFullscreen()" class="w-12 h-12 liquid-glass rounded-full flex items-center justify-center transition shadow-xl active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
             </button>
-            <span class="text-xs text-white shadow-black drop-shadow-md">تكبير</span>
+            <span class="text-[10px] text-gray-300 font-medium drop-shadow">تكبير</span>
         </div>
 
-        <!-- زر إخفاء الأزرار -->
+        <!-- زر إخفاء الواجهة -->
         <div class="flex flex-col items-center gap-1">
-            <button onclick="toggleUI()" class="w-12 h-12 bg-gray-800/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-gray-700/80 transition active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
-                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
-                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
-                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
-                    <line x1="2" x2="22" y1="2" y2="22"/>
-                </svg>
+            <button onclick="toggleUI()" class="w-12 h-12 liquid-glass rounded-full flex items-center justify-center transition shadow-xl active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
             </button>
-            <span class="text-xs text-white shadow-black drop-shadow-md">إخفاء</span>
+            <span class="text-[10px] text-gray-300 font-medium drop-shadow">إخفاء</span>
         </div>
 
     </div>
 
     <script>
-        // المتغيرات العامة
-        const DATA_URL = "https://raw.githubusercontent.com/Aminoxdag/My-links/refs/heads/main/Catbox_Nana_links.txt";
+        let DEFAULT_DATA_URL = "https://raw.githubusercontent.com/Aminoxdag/My-links/refs/heads/main/Catbox_Nana_links.txt";
         let videoList = [];
         let currentIndex = 0;
         let isLooping = false;
         let isUiVisible = true;
-        
-        // عناصر DOM
+        let isMuted = false;
+        let isShuffleEnabled = true;
+
         const videoPlayer = document.getElementById('main-video');
         const loader = document.getElementById('loader');
         const uiControls = document.getElementById('ui-controls');
+        const topBar = document.getElementById('top-bar');
         const btnLoop = document.getElementById('btn-loop');
-        const errorMsg = document.getElementById('error-message');
-        const infoLayer = document.getElementById('info-layer');
+        const counterText = document.getElementById('counter-text');
+        const toastLayer = document.getElementById('toast-layer');
+        const iconSoundOn = document.getElementById('icon-sound-on');
+        const iconSoundOff = document.getElementById('icon-sound-off');
 
-        // --- تهيئة التطبيق ---
         document.addEventListener('DOMContentLoaded', async () => {
-            await fetchVideos();
+            document.getElementById('input-source').value = DEFAULT_DATA_URL;
+            await fetchVideos(DEFAULT_DATA_URL);
             setupInteractions();
         });
 
-        // --- خوارزمية الخلط (Fisher-Yates Shuffle) ---
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        // --- جلب ومعالجة البيانات ---
-        async function fetchVideos() {
+        async function fetchVideos(url) {
             try {
-                const response = await fetch(DATA_URL);
-                if (!response.ok) throw new Error("فشل في جلب ملف البيانات");
-                
+                loader.style.display = 'flex';
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
                 const text = await response.text();
                 
-                // تحويل النص إلى مصفوفة وتنظيفه
                 let rawList = text.split('\n')
-                    .map(line => line.trim()) // إزالة المسافات الزائدة
-                    .filter(line => line.length > 0); // الاحتفاظ فقط بالأسطر غير الفارغة
+                    .map(l => l.trim())
+                    .filter(l => l.length > 0 && l.startsWith('http'));
 
                 if (rawList.length === 0) {
-                    showError("الملف فارغ أو لا يحتوي على روابط.");
+                    showToast("القائمة فارغة أو لا تحتوي على روابط صالحة");
+                    loader.style.display = 'none';
                     return;
                 }
 
-                // تطبيق الترتيب العشوائي
-                videoList = shuffleArray(rawList);
+                if (isShuffleEnabled) {
+                    videoList = shuffleArray(rawList);
+                } else {
+                    videoList = rawList;
+                }
 
-                // تشغيل الفيديو الأول
-                loadVideo(0);
+                currentIndex = 0;
+                loadVideo(currentIndex);
                 loader.style.display = 'none';
-
             } catch (error) {
                 console.error(error);
                 loader.style.display = 'none';
-                showError("حدث خطأ أثناء تحميل القائمة. يرجى التحقق من الاتصال.");
+                showToast(`خطأ في جلب القائمة`);
             }
         }
 
-        // --- تشغيل الفيديو ---
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
         function loadVideo(index) {
             if (videoList.length === 0) return;
-
-            // التأكد من أن الفهرس ضمن الحدود
             if (index < 0) index = 0;
             if (index >= videoList.length) index = videoList.length - 1;
 
             currentIndex = index;
+            counterText.textContent = `${currentIndex + 1} / ${videoList.length}`;
 
-            // إعداد المصدر والتشغيل
-            // إضافة معالجة خطأ عند فشل تحميل رابط معين
-            videoPlayer.onerror = function() {
-                console.log("Error loading video, skipping...", videoList[currentIndex]);
-                showToast("فشل تحميل الفيديو، جاري الانتقال للتالي...");
-                setTimeout(() => nextVideo(), 1000); // محاولة الانتقال للتالي بعد ثانية
+            // تخطي الرابط الخربان بصمت تام دون إظهار أي رسالة
+            videoPlayer.onerror = () => {
+                console.warn("Skipping broken video link:", videoList[currentIndex]);
+                nextVideo();
             };
 
             videoPlayer.src = videoList[currentIndex];
-            videoPlayer.load(); // إعادة تعيين الفيديو
-            
-            // محاولة التشغيل التلقائي
+            videoPlayer.load();
+
             const playPromise = videoPlayer.play();
             if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Autoplay prevented or interrupted.");
+                playPromise.catch(() => {
+                    // التشغيل التلقائي قد يتطلب تفاعل المستخدم
                 });
             }
+
+            preloadNextVideo();
         }
 
-        // --- وظائف التحكم ---
-        function toggleLoop() {
-            isLooping = !isLooping;
-            videoPlayer.loop = isLooping;
-            
-            if (isLooping) {
-                btnLoop.classList.add('border-green-500', 'text-green-400');
-                btnLoop.classList.remove('border-transparent');
-                showToast("تم تفعيل التكرار");
-            } else {
-                btnLoop.classList.remove('border-green-500', 'text-green-400');
-                btnLoop.classList.add('border-transparent');
-                showToast("تم إيقاف التكرار");
+        function preloadNextVideo() {
+            if (currentIndex + 1 < videoList.length) {
+                const preloader = document.createElement('link');
+                preloader.rel = 'prefetch';
+                preloader.href = videoList[currentIndex + 1];
+                document.head.appendChild(preloader);
             }
         }
 
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
-        }
-
-        function toggleUI() {
-            isUiVisible = !isUiVisible;
-            if (isUiVisible) {
-                uiControls.classList.remove('ui-hidden');
-            } else {
-                uiControls.classList.add('ui-hidden');
-            }
-        }
-
-        // --- التنقل (التالي / السابق) ---
         function nextVideo() {
             if (currentIndex < videoList.length - 1) {
                 loadVideo(currentIndex + 1);
             } else {
-                showToast("وصلت لآخر القائمة");
-                animateBounce('up');
+                showToast("وصلت إلى نهاية القائمة");
             }
         }
 
@@ -276,47 +291,138 @@
             if (currentIndex > 0) {
                 loadVideo(currentIndex - 1);
             } else {
-                showToast("البداية");
-                animateBounce('down');
+                showToast("أنت في بداية القائمة");
             }
         }
 
-        // عند انتهاء الفيديو (إذا لم يكن التكرار مفعلاً)، انتقل للتالي تلقائياً
+        function togglePlayPause() {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+            } else {
+                videoPlayer.pause();
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            videoPlayer.muted = isMuted;
+            if (isMuted) {
+                iconSoundOn.classList.add('hidden');
+                iconSoundOff.classList.remove('hidden');
+                showToast("تم كتم الصوت");
+            } else {
+                iconSoundOn.classList.remove('hidden');
+                iconSoundOff.classList.add('hidden');
+                showToast("تم تفعيل الصوت");
+            }
+        }
+
+        function toggleLoop() {
+            isLooping = !isLooping;
+            videoPlayer.loop = isLooping;
+            if (isLooping) {
+                btnLoop.classList.add('border-cyan-400', 'bg-cyan-500/20');
+                showToast("تكرار الفيديو مفعل");
+            } else {
+                btnLoop.classList.remove('border-cyan-400', 'bg-cyan-500/20');
+                showToast("تكرار الفيديو معطل");
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function toggleUI() {
+            isUiVisible = !isUiVisible;
+            if (isUiVisible) {
+                uiControls.classList.remove('ui-hidden');
+                topBar.classList.remove('ui-hidden');
+            } else {
+                uiControls.classList.add('ui-hidden');
+                topBar.classList.add('ui-hidden');
+            }
+        }
+
         videoPlayer.addEventListener('ended', () => {
             if (!isLooping) {
-                if (currentIndex < videoList.length - 1) {
-                    nextVideo();
-                }
+                nextVideo();
             }
         });
 
-        // --- التفاعلات (لمس، لوحة مفاتيح، فأرة) ---
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function changeSpeed(val) {
+            videoPlayer.playbackRate = parseFloat(val);
+        }
+
+        function toggleShuffle() {
+            isShuffleEnabled = !isShuffleEnabled;
+            const dot = document.getElementById('shuffle-dot');
+            const btn = document.getElementById('btn-shuffle-opt');
+            if (isShuffleEnabled) {
+                dot.style.transform = 'translateX(24px)';
+                btn.className = "w-12 h-6 bg-cyan-500 rounded-full transition relative p-1 flex items-center shadow-[0_0_10px_rgba(34,211,238,0.4)]";
+            } else {
+                dot.style.transform = 'translateX(0px)';
+                btn.className = "w-12 h-6 bg-gray-700 rounded-full transition relative p-1 flex items-center";
+            }
+        }
+
+        async function saveSettings() {
+            const newUrl = document.getElementById('input-source').value.trim();
+            if (newUrl) {
+                DEFAULT_DATA_URL = newUrl;
+                toggleSettings();
+                await fetchVideos(DEFAULT_DATA_URL);
+                showToast("تم تحديث المصدر بنجاح");
+            }
+        }
+
         function setupInteractions() {
             let startY = 0;
-            let endY = 0;
+            let startX = 0;
+            let startTime = 0;
 
-            // أحداث اللمس (للموبايل)
             document.addEventListener('touchstart', (e) => {
+                if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.fixed')) return;
                 startY = e.touches[0].clientY;
-            }, { passive: false });
+                startX = e.touches[0].clientX;
+                startTime = Date.now();
+            }, { passive: true });
 
             document.addEventListener('touchend', (e) => {
-                endY = e.changedTouches[0].clientY;
-                handleSwipe();
-            }, { passive: false });
+                if (e.target.closest('button') || e.target.closest('input') || e.target.closest('.fixed')) return;
+                let endY = e.changedTouches[0].clientY;
+                let endX = e.changedTouches[0].clientX;
+                let diffY = startY - endY;
+                let diffX = startX - endX;
+                let timeElapsed = Date.now() - startTime;
 
-            // أحداث العجلة (للكمبيوتر)
-            document.addEventListener('wheel', (e) => {
-                // منع التمرير السريع جداً
-                if (e.deltaY > 30) {
-                    nextVideo(); // سكرول للأسفل = فيديو تالي
-                } else if (e.deltaY < -30) {
-                    prevVideo(); // سكرول للأعلى = فيديو سابق
+                if (Math.abs(diffY) > 40 && Math.abs(diffY) > Math.abs(diffX)) {
+                    if (diffY > 0) nextVideo();
+                    else prevVideo();
+                } else if (Math.abs(diffY) < 15 && Math.abs(diffX) < 15 && timeElapsed < 300) {
+                    // لمسة خفيفة وسريعة بدون سحب = إيقاف أو تشغيل الفيديو بصمت ودون أيقونات
+                    togglePlayPause();
                 }
+            }, { passive: true });
+
+            document.addEventListener('wheel', (e) => {
+                if (e.target.closest('.fixed')) return;
+                if (e.deltaY > 25) nextVideo();
+                else if (e.deltaY < -25) prevVideo();
             });
 
-            // لوحة المفاتيح
             document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
                 if (e.key === 'ArrowDown' || e.key === ' ') {
                     e.preventDefault();
                     nextVideo();
@@ -325,65 +431,27 @@
                     prevVideo();
                 } else if (e.key.toLowerCase() === 'f') {
                     toggleFullscreen();
+                } else if (e.key.toLowerCase() === 'm') {
+                    toggleMute();
                 } else if (e.key.toLowerCase() === 'h') {
                     toggleUI();
+                } else if (e.key.toLowerCase() === 'p') {
+                    togglePlayPause();
                 }
             });
 
-            // النقر على الفيديو لإيقاف/تشغيل أو إظهار الواجهة
-            videoPlayer.addEventListener('click', () => {
-                if (!isUiVisible) {
-                    toggleUI(); // إذا كانت الواجهة مخفية، أظهرها
-                } else {
-                    if (videoPlayer.paused) videoPlayer.play();
-                    else videoPlayer.pause();
-                }
+            // النقر بالفأرة (للكمبيوتر) لإيقاف أو تشغيل الفيديو بصمت
+            videoPlayer.addEventListener('click', (e) => {
+                togglePlayPause();
             });
-
-            function handleSwipe() {
-                const threshold = 50; // الحد الأدنى للمسافة لاعتبارها سحباً
-                const diff = startY - endY;
-
-                if (Math.abs(diff) > threshold) {
-                    if (diff > 0) {
-                        // سحب للأعلى (Finger moves up) -> الفيديو التالي
-                        nextVideo();
-                    } else {
-                        // سحب للأسفل (Finger moves down) -> الفيديو السابق
-                        prevVideo();
-                    }
-                }
-            }
-        }
-
-        // --- وظائف مساعدة ---
-        function showError(msg) {
-            errorMsg.textContent = msg;
-            infoLayer.classList.remove('hidden');
         }
 
         function showToast(msg) {
-            // إنشاء عنصر توست بسيط مؤقت
-            const toast = document.createElement('div');
-            toast.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900/80 text-white px-6 py-3 rounded-xl backdrop-blur-md z-50 fade-transition shadow-2xl border border-gray-700 text-sm font-semibold tracking-wide";
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            
+            toastLayer.textContent = msg;
+            toastLayer.style.opacity = '1';
             setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 1000);
-        }
-
-        function animateBounce(direction) {
-            // حركة بسيطة تدل على الوصول للنهاية
-            const container = document.getElementById('video-container');
-            const transform = direction === 'up' ? 'translateY(-20px)' : 'translateY(20px)';
-            container.style.transition = 'transform 0.1s';
-            container.style.transform = transform;
-            setTimeout(() => {
-                container.style.transform = 'translateY(0)';
-            }, 100);
+                toastLayer.style.opacity = '0';
+            }, 3000);
         }
 
     </script>
